@@ -1,50 +1,45 @@
 export default async function handler(req, res) {
-    const API_KEY = process.env.GNEWS_API_KEY;
+    const apiKey = process.env.GNEWS_API_KEY;
 
-    // Check API key
-    if (!API_KEY) {
+    if (!apiKey) {
         return res.status(500).json({
-            error: "GNews API key is not configured."
+            success: false,
+            message: "GNEWS_API_KEY is missing in Vercel."
         });
     }
 
-    const { category = "general", search } = req.query;
+    const category = req.query.category || "general";
 
-    // Decide API endpoint
-    const endpoint = search ? "search" : "top-headlines";
-
-    const url = new URL(
-        `https://gnews.io/api/v4/${endpoint}`
-    );
-
-    // Search news
-    if (search) {
-        url.searchParams.set("q", search);
-    } 
-    // Category news
-    else {
-        url.searchParams.set("category", category);
-        url.searchParams.set("country", "in");
-    }
-
-    // Common settings
-    url.searchParams.set("lang", "en");
-    url.searchParams.set("max", "10");
-    url.searchParams.set("apikey", API_KEY);
+    const url =
+        "https://gnews.io/api/v4/top-headlines" +
+        "?category=" + encodeURIComponent(category) +
+        "&country=in" +
+        "&lang=en" +
+        "&max=10" +
+        "&apikey=" + encodeURIComponent(apiKey);
 
     try {
         const response = await fetch(url);
         const data = await response.json();
 
         if (!response.ok) {
-            return res.status(response.status).json(data);
+            return res.status(response.status).json({
+                success: false,
+                message: "GNews API error",
+                details: data
+            });
         }
 
-        return res.status(200).json(data);
+        return res.status(200).json({
+            success: true,
+            articles: data.articles || []
+        });
 
     } catch (error) {
         return res.status(500).json({
-            error: "Unable to fetch news."
+            success: false,
+            message: "Server error",
+            details: error.message
         });
     }
 }
