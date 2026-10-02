@@ -3,43 +3,62 @@ export default async function handler(req, res) {
 
     if (!apiKey) {
         return res.status(500).json({
-            success: false,
-            message: "GNEWS_API_KEY is missing in Vercel."
+            articles: [],
+            error: "GNEWS_API_KEY is missing in Vercel."
         });
     }
 
     const category = req.query.category || "general";
 
-    const url =
-        "https://gnews.io/api/v4/top-headlines" +
-        "?category=" + encodeURIComponent(category) +
-        "&country=in" +
-        "&lang=en" +
-        "&max=10" +
-        "&apikey=" + encodeURIComponent(apiKey);
+    const allowedCategories = [
+        "general",
+        "world",
+        "nation",
+        "business",
+        "technology",
+        "entertainment",
+        "sports",
+        "science"
+    ];
+
+    if (!allowedCategories.includes(category)) {
+        return res.status(400).json({
+            articles: [],
+            error: "Invalid category."
+        });
+    }
+
+    const params = new URLSearchParams({
+        category: category,
+        lang: "en",
+        country: "in",
+        max: "10",
+        nullable: "image,description",
+        apikey: apiKey
+    });
 
     try {
-        const response = await fetch(url);
+        const response = await fetch(
+            `https://gnews.io/api/v4/top-headlines?${params}`
+        );
+
         const data = await response.json();
 
         if (!response.ok) {
             return res.status(response.status).json({
-                success: false,
-                message: "GNews API error",
-                details: data
+                articles: [],
+                error: data.errors || "GNews request failed."
             });
         }
 
         return res.status(200).json({
-            success: true,
             articles: data.articles || []
         });
 
     } catch (error) {
         return res.status(500).json({
-            success: false,
-            message: "Server error",
-            details: error.message
+            articles: [],
+            error: error.message
         });
     }
 }
