@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>NewsPulse — Latest India & World News</title>
+    <meta name="description" content="NewsPulse - Latest India, World, Sports, Technology, Business, Science and Entertainment news.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= TOP BAR ================= -->
+<div class="top-bar">
+    <div class="container top-content">
+        <span>🔴 LIVE NEWS</span>
+        <span id="currentDate">Loading date...</span>
+    </div>
+</div>
+
+
+<!-- ================= NAVBAR ================= -->
+<header class="navbar">
+    <div class="container nav-content">
+
+        <a href="#" class="logo">
+            <span class="logo-icon">N</span>
+            <span>News<span>Pulse</span></span>
+        </a>
+
+        <nav class="nav-links" id="navLinks">
+            <a href="#" class="active" data-category="general">Home</a>
+            <a href="#" data-category="nation">India</a>
+            <a href="#" data-category="world">World</a>
+            <a href="#" data-category="sports">Sports</a>
+            <a href="#" data-category="technology">Technology</a>
+        </nav>
+
+        <div class="nav-actions">
+            <button id="searchBtn" class="icon-btn" aria-label="Search">🔎</button>
+            <button id="themeBtn" class="icon-btn" aria-label="Dark mode">🌙</button>
+            <button id="menuBtn" class="icon-btn menu-btn" aria-label="Menu">☰</button>
+        </div>
+
+    </div>
+</header>
+
+
+<!-- ================= SEARCH ================= -->
+<section class="search-section" id="searchSection">
+    <div class="container search-box">
+
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search latest news..."
+        >
+
+        <button id="searchSubmit">Search</button>
+
+    </div>
+</section>
+
+
+<!-- ================= BREAKING NEWS ================= -->
+<section class="breaking">
+    <div class="container breaking-content">
+
+        <strong>BREAKING</strong>
+
+        <div class="ticker">
+            <span id="breakingText">
+                Loading latest headlines...
+            </span>
+        </div>
+
+    </div>
+</section>
+
+
+<!-- ================= MAIN ================= -->
+<main>
+
+    <!-- HERO -->
+    <section class="hero-section">
+        <div class="container">
+
+            <div class="section-heading">
+                <div>
+                    <span class="eyebrow">TODAY'S TOP STORIES</span>
+                    <h1>Stay informed.<br><span>Stay ahead.</span></h1>
+                </div>
+
+                <p>
+                    Latest news from India, the world, sports,
+                    technology, business and more.
+                </p>
+            </div>
+
+            <div id="heroNews" class="hero-grid">
+                <div class="loading">Loading top stories...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- CATEGORY PILLS -->
+    <section class="categories-section">
+        <div class="container">
+
+            <div class="category-pills">
+
+                <button class="category-btn active" data-category="general">
+                    Latest
+                </button>
+
+                <button class="category-btn" data-category="nation">
+                    🇮🇳 India
+                </button>
+
+                <button class="category-btn" data-category="world">
+                    🌍 World
+                </button>
+
+                <button class="category-btn" data-category="sports">
+                    🏏 Sports
+                </button>
+
+                <button class="category-btn" data-category="technology">
+                    💻 Technology
+                </button>
+
+                <button class="category-btn" data-category="business">
+                    💼 Business
+                </button>
+
+                <button class="category-btn" data-category="science">
+                    🔬 Science
+                </button>
+
+                <button class="category-btn" data-category="entertainment">
+                    🎬 Entertainment
+                </button>
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- LATEST NEWS -->
+    <section class="news-section">
+        <div class="container">
+
+            <div class="section-title">
+                <div>
+                    <span class="eyebrow">LATEST</span>
+                    <h2>Latest News</h2>
+                </div>
+
+                <button class="view-all" data-category="general">
+                    View All →
+                </button>
+            </div>
+
+            <div id="latestNews" class="news-grid">
+                <div class="loading">Loading news...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- INDIA -->
+    <section class="news-section alt-section">
+        <div class="container">
+
+            <div class="section-title">
+                <div>
+                    <span class="eyebrow">INDIA</span>
+                    <h2>India News 🇮🇳</h2>
+                </div>
+
+                <button class="view-all" data-category="nation">
+                    View All →
+                </button>
+            </div>
+
+            <div id="indiaNews" class="news-grid">
+                <div class="loading">Loading India news...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- WORLD -->
+    <section class="news-section">
+        <div class="container">
+
+            <div class="section-title">
+                <div>
+                    <span class="eyebrow">WORLD</span>
+                    <h2>World News 🌍</h2>
+                </div>
+
+                <button class="view-all" data-category="world">
+                    View All →
+                </button>
+            </div>
+
+            <div id="worldNews" class="news-grid">
+                <div class="loading">Loading world news...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- SPORTS -->
+    <section class="sports-section">
+        <div class="container">
+
+            <div class="section-title light">
+                <div>
+                    <span class="eyebrow">SPORTS PULSE</span>
+                    <h2>Sports ⚽</h2>
+                </div>
+
+                <button class="view-all light-btn" data-category="sports">
+                    More Sports →
+                </button>
+            </div>
+
+            <div id="sportsNews" class="sports-grid">
+                <div class="loading">Loading sports...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- TECHNOLOGY -->
+    <section class="news-section">
+        <div class="container">
+
+            <div class="section-title">
+                <div>
+                    <span class="eyebrow">TECH</span>
+                    <h2>Technology 💻</h2>
+                </div>
+
+                <button class="view-all" data-category="technology">
+                    View All →
+                </button>
+            </div>
+
+            <div id="technologyNews" class="news-grid">
+                <div class="loading">Loading technology...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- BUSINESS + SCIENCE -->
+    <section class="split-section">
+        <div class="container split-grid">
+
+            <div>
+
+                <div class="section-title small-title">
+                    <div>
+                        <span class="eyebrow">BUSINESS</span>
+                        <h2>Business 💼</h2>
+                    </div>
+                </div>
+
+                <div id="businessNews" class="compact-list">
+                    <div class="loading">Loading...</div>
+                </div>
+
+            </div>
+
+
+            <div>
+
+                <div class="section-title small-title">
+                    <div>
+                        <span class="eyebrow">SCIENCE</span>
+                        <h2>Science 🔬</h2>
+                    </div>
+                </div>
+
+                <div id="scienceNews" class="compact-list">
+                    <div class="loading">Loading...</div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- ENTERTAINMENT -->
+    <section class="news-section alt-section">
+        <div class="container">
+
+            <div class="section-title">
+                <div>
+                    <span class="eyebrow">ENTERTAINMENT</span>
+                    <h2>Entertainment 🎬</h2>
+                </div>
+
+                <button class="view-all" data-category="entertainment">
+                    View All →
+                </button>
+            </div>
+
+            <div id="entertainmentNews" class="news-grid">
+                <div class="loading">Loading entertainment...</div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- NEWSLETTER -->
+    <section class="newsletter-section">
+        <div class="container">
+
+            <div class="newsletter">
+
+                <div>
+                    <span class="eyebrow">NEWSLETTER</span>
+                    <h2>Get the news that matters.</h2>
+
+                    <p>
+                        Subscribe for important headlines and updates.
+                    </p>
+                </div>
+
+                <form id="newsletterForm">
+
+                    <input
+                        type="email"
+                        id="newsletterEmail"
+                        placeholder="Your email address"
+                        required
+                    >
+
+                    <button type="submit">
+                        Subscribe
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+
+<!-- ================= FOOTER ================= -->
+<footer>
+
+    <div class="container footer-grid">
+
+        <div class="footer-brand">
+
+            <a href="#" class="logo">
+                <span class="logo-icon">N</span>
+                <span>News<span>Pulse</span></span>
+            </a>
+
+            <p>
+                Your modern destination for India,
+                world and global news.
+            </p>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <h4>Categories</h4>
+
+            <a href="#" data-category="nation">India</a>
+            <a href="#" data-category="world">World</a>
+            <a href="#" data-category="sports">Sports</a>
+            <a href="#" data-category="technology">Technology</a>
+
+        </div>
+
+
+        <div class="footer-links">
+
+            <h4>More</h4>
+
+            <a href="#" data-category="business">Business</a>
+            <a href="#" data-category="science">Science</a>
+            <a href="#" data-category="entertainment">Entertainment</a>
+
+        </div>
+
+    </div>
+
+
+    <div class="footer-bottom">
+        <div class="container">
+            © <span id="year"></span> NewsPulse. All rights reserved.
+        </div>
+    </div>
+
+</footer>
+
+
+<script src="script.js"></script>
+
+</body>
+</html>
