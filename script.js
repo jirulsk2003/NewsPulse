@@ -1,9 +1,13 @@
+/* =====================================================
+   NEWSPULSE - SCRIPT.JS
+   Rate-limit safe GNews version
+===================================================== */
+
 const API_URL = "/api/news";
 
-
-// ===============================
-// ELEMENTS
-// ===============================
+/* =====================================================
+   ELEMENTS
+===================================================== */
 
 const searchBtn = document.getElementById("searchBtn");
 const searchSection = document.getElementById("searchSection");
@@ -11,87 +15,83 @@ const searchInput = document.getElementById("searchInput");
 const searchSubmit = document.getElementById("searchSubmit");
 
 const themeBtn = document.getElementById("themeBtn");
-
 const menuBtn = document.getElementById("menuBtn");
 const navLinks = document.getElementById("navLinks");
 
 const currentDate = document.getElementById("currentDate");
 const year = document.getElementById("year");
-
 const breakingText = document.getElementById("breakingText");
 
-
-// ===============================
-// FALLBACK IMAGES
-// ===============================
+/* =====================================================
+   FALLBACK IMAGES
+===================================================== */
 
 const fallbackImages = [
-
     "https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1000&q=80",
-
     "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1000&q=80",
-
     "https://images.unsplash.com/photo-1521295121783-8a321d551ad2?auto=format&fit=crop&w=1000&q=80"
-
 ];
 
-
-// ===============================
-// DATE
-// ===============================
+/* =====================================================
+   DATE
+===================================================== */
 
 function updateDate() {
 
     const date = new Date();
 
-    currentDate.textContent =
-        date.toLocaleDateString("en-IN", {
+    if (currentDate) {
+        currentDate.textContent =
+            date.toLocaleDateString("en-IN", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            });
+    }
 
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric"
-
-        });
-
-    year.textContent = date.getFullYear();
-
+    if (year) {
+        year.textContent = date.getFullYear();
+    }
 }
 
 updateDate();
 
+/* =====================================================
+   SEARCH OPEN / CLOSE
+===================================================== */
 
-// ===============================
-// SEARCH BUTTON
-// ===============================
+if (searchBtn && searchSection) {
 
-searchBtn.addEventListener("click", () => {
+    searchBtn.addEventListener("click", () => {
 
-    searchSection.classList.toggle("show");
+        searchSection.classList.toggle("show");
 
-    if (searchSection.classList.contains("show")) {
+        if (
+            searchSection.classList.contains("show") &&
+            searchInput
+        ) {
+            searchInput.focus();
+        }
+    });
+}
 
-        searchInput.focus();
+/* =====================================================
+   MOBILE MENU
+===================================================== */
 
-    }
+if (menuBtn && navLinks) {
 
-});
+    menuBtn.addEventListener("click", () => {
 
+        navLinks.classList.toggle("show");
 
-// ===============================
-// MOBILE MENU
-// ===============================
+    });
+}
 
-menuBtn.addEventListener("click", () => {
-
-    navLinks.classList.toggle("show");
-
-});
-
-
-// ===============================
-// DARK MODE
-// ===============================
+/* =====================================================
+   DARK MODE
+===================================================== */
 
 const savedTheme =
     localStorage.getItem("newspulse-theme");
@@ -100,36 +100,74 @@ if (savedTheme === "dark") {
 
     document.body.classList.add("dark");
 
-    themeBtn.textContent = "☀️";
-
+    if (themeBtn) {
+        themeBtn.textContent = "☀️";
+    }
 }
 
+if (themeBtn) {
 
-themeBtn.addEventListener("click", () => {
+    themeBtn.addEventListener("click", () => {
 
-    document.body.classList.toggle("dark");
+        document.body.classList.toggle("dark");
 
-    const dark =
-        document.body.classList.contains("dark");
+        const dark =
+            document.body.classList.contains("dark");
 
-    themeBtn.textContent =
-        dark ? "☀️" : "🌙";
+        themeBtn.textContent =
+            dark ? "☀️" : "🌙";
 
-    localStorage.setItem(
-        "newspulse-theme",
-        dark ? "dark" : "light"
-    );
+        localStorage.setItem(
+            "newspulse-theme",
+            dark ? "dark" : "light"
+        );
+    });
+}
 
-});
+/* =====================================================
+   REQUEST CONTROL
+===================================================== */
 
+let lastRequestTime = 0;
 
-// ===============================
-// GET NEWS
-// ===============================
+const REQUEST_DELAY = 1200;
+
+/*
+   GNews Free plan:
+   approximately 1 request / second.
+
+   We use 1200ms to keep a safe gap.
+*/
+
+async function waitForRateLimit() {
+
+    const now = Date.now();
+
+    const elapsed =
+        now - lastRequestTime;
+
+    const waitTime =
+        REQUEST_DELAY - elapsed;
+
+    if (waitTime > 0) {
+
+        await new Promise(resolve =>
+            setTimeout(resolve, waitTime)
+        );
+    }
+
+    lastRequestTime = Date.now();
+}
+
+/* =====================================================
+   NEWS API
+===================================================== */
 
 async function getNews(category = "general") {
 
     try {
+
+        await waitForRateLimit();
 
         console.log(
             "Loading category:",
@@ -137,133 +175,174 @@ async function getNews(category = "general") {
         );
 
         const response = await fetch(
-            `${API_URL}?category=${encodeURIComponent(category)}`
+            `${API_URL}?category=${encodeURIComponent(category)}`,
+            {
+                cache: "no-store"
+            }
         );
 
-        const data = await response.json();
+        /* 429 */
 
-        console.log(
-            "API response:",
-            category,
-            data
-        );
+        if (response.status === 429) {
 
+            console.warn(
+                "GNews rate limit reached."
+            );
+
+            return {
+                articles: [],
+                rateLimited: true
+            };
+        }
+
+        /* Other errors */
 
         if (!response.ok) {
 
-            throw new Error(
-                data.error ||
-                data.message ||
-                "News API error"
+            let errorData = {};
+
+            try {
+                errorData =
+                    await response.json();
+            } catch (error) {
+                // Ignore JSON parsing error
+            }
+
+            console.error(
+                "News API error:",
+                response.status,
+                errorData
             );
 
+            return {
+                articles: [],
+                error: true
+            };
         }
 
+        const data =
+            await response.json();
 
-        return data.articles || [];
-
+        return {
+            articles: data.articles || [],
+            rateLimited: false,
+            error: false
+        };
 
     } catch (error) {
 
         console.error(
-            "News loading error:",
+            "Network error:",
             error
         );
 
-        return [];
-
+        return {
+            articles: [],
+            error: true
+        };
     }
-
 }
 
-
-// ===============================
-// SEARCH NEWS
-// ===============================
+/* =====================================================
+   SEARCH API
+===================================================== */
 
 async function searchNews(query) {
 
     try {
 
+        await waitForRateLimit();
+
         const response = await fetch(
-            `${API_URL}?search=${encodeURIComponent(query)}`
+            `${API_URL}?search=${encodeURIComponent(query)}`,
+            {
+                cache: "no-store"
+            }
         );
 
-        const data = await response.json();
+        if (response.status === 429) {
+
+            return {
+                articles: [],
+                rateLimited: true
+            };
+        }
 
         if (!response.ok) {
 
-            throw new Error(
-                data.error ||
-                "Search failed"
-            );
-
+            return {
+                articles: [],
+                error: true
+            };
         }
 
-        return data.articles || [];
+        const data =
+            await response.json();
 
+        return {
+            articles: data.articles || [],
+            rateLimited: false
+        };
 
     } catch (error) {
 
-        console.error(
-            "Search error:",
-            error
-        );
+        console.error(error);
 
-        return [];
-
+        return {
+            articles: [],
+            error: true
+        };
     }
-
 }
 
-
-// ===============================
-// IMAGE
-// ===============================
+/* =====================================================
+   IMAGE
+===================================================== */
 
 function getImage(article, index = 0) {
 
-    return (
-        article.image ||
-        fallbackImages[
-            index % fallbackImages.length
-        ]
-    );
+    if (
+        article &&
+        article.image
+    ) {
+        return article.image;
+    }
 
+    return fallbackImages[
+        index % fallbackImages.length
+    ];
 }
 
-
-// ===============================
-// DATE FORMAT
-// ===============================
+/* =====================================================
+   DATE FORMAT
+===================================================== */
 
 function formatDate(dateString) {
 
     if (!dateString) {
-
         return "Today";
-
     }
 
-    return new Date(
-        dateString
-    ).toLocaleDateString(
+    const date =
+        new Date(dateString);
+
+    if (isNaN(date.getTime())) {
+        return "Today";
+    }
+
+    return date.toLocaleDateString(
         "en-IN",
         {
-
             day: "numeric",
             month: "short",
             year: "numeric"
-
         }
     );
-
 }
 
-
-// ===============================
-// NEWS CARD
-// ===============================
+/* =====================================================
+   NEWS CARD
+===================================================== */
 
 function createNewsCard(
     article,
@@ -285,17 +364,14 @@ function createNewsCard(
         article.source?.name ||
         "NewsPulse";
 
-    const url =
-        article.url ||
-        "#";
-
+    const articleUrl =
+        article.url || "#";
 
     return `
-
         <article class="news-card">
 
             <a
-                href="${url}"
+                href="${articleUrl}"
                 target="_blank"
                 rel="noopener noreferrer"
             >
@@ -304,7 +380,7 @@ function createNewsCard(
 
                     <img
                         src="${image}"
-                        alt="News"
+                        alt="${title.replace(/"/g, "")}"
                         loading="lazy"
                         onerror="this.src='${fallbackImages[0]}'"
                     >
@@ -312,7 +388,6 @@ function createNewsCard(
                 </div>
 
             </a>
-
 
             <div class="news-card-content">
 
@@ -330,20 +405,17 @@ function createNewsCard(
 
                 </div>
 
-
                 <h3>
                     ${title}
                 </h3>
-
 
                 <p>
                     ${description}
                 </p>
 
-
                 <a
                     class="read-more"
-                    href="${url}"
+                    href="${articleUrl}"
                     target="_blank"
                     rel="noopener noreferrer"
                 >
@@ -353,15 +425,12 @@ function createNewsCard(
             </div>
 
         </article>
-
     `;
-
 }
 
-
-// ===============================
-// COMPACT CARD
-// ===============================
+/* =====================================================
+   COMPACT CARD
+===================================================== */
 
 function createCompactCard(
     article,
@@ -369,7 +438,6 @@ function createCompactCard(
 ) {
 
     return `
-
         <article class="compact-card">
 
             <img
@@ -388,7 +456,7 @@ function createCompactCard(
                 >
 
                     <h3>
-                        ${article.title || "Latest news"}
+                        ${article.title || "Latest News"}
                     </h3>
 
                 </a>
@@ -400,15 +468,12 @@ function createCompactCard(
             </div>
 
         </article>
-
     `;
-
 }
 
-
-// ===============================
-// HERO CARD
-// ===============================
+/* =====================================================
+   HERO CARD
+===================================================== */
 
 function createHeroCard(
     article,
@@ -417,8 +482,9 @@ function createHeroCard(
 ) {
 
     return `
-
-        <article class="hero-card ${large ? "large" : ""}">
+        <article
+            class="hero-card ${large ? "large" : ""}"
+        >
 
             <img
                 src="${getImage(article, index)}"
@@ -426,7 +492,6 @@ function createHeroCard(
                 loading="lazy"
                 onerror="this.src='${fallbackImages[0]}'"
             >
-
 
             <div class="hero-overlay">
 
@@ -444,16 +509,13 @@ function createHeroCard(
 
                 </div>
 
-
                 <h2>
                     ${article.title || "Top News"}
                 </h2>
 
-
                 <p>
                     ${article.description || ""}
                 </p>
-
 
                 <a
                     class="read-more"
@@ -468,44 +530,70 @@ function createHeroCard(
             </div>
 
         </article>
-
     `;
-
 }
 
+/* =====================================================
+   EMPTY / ERROR MESSAGE
+===================================================== */
 
-// ===============================
-// RENDER NEWS
-// ===============================
+function showNewsMessage(
+    element,
+    message
+) {
+
+    if (!element) {
+        return;
+    }
+
+    element.innerHTML = `
+        <div class="loading">
+            ${message}
+        </div>
+    `;
+}
+
+/* =====================================================
+   RENDER NEWS
+===================================================== */
 
 function renderNews(
     elementId,
-    articles
+    result
 ) {
 
     const element =
         document.getElementById(elementId);
 
-    if (!element) return;
-
-
-    if (!articles.length) {
-
-        element.innerHTML = `
-
-            <div class="loading">
-                No news available right now.
-            </div>
-
-        `;
-
+    if (!element) {
         return;
-
     }
 
+    if (result.rateLimited) {
+
+        showNewsMessage(
+            element,
+            "News service is busy. Please try again in a few seconds."
+        );
+
+        return;
+    }
+
+    if (
+        result.error ||
+        !result.articles.length
+    ) {
+
+        showNewsMessage(
+            element,
+            "No news available right now."
+        );
+
+        return;
+    }
 
     element.innerHTML =
-        articles
+        result.articles
             .slice(0, 6)
             .map(
                 (article, index) =>
@@ -515,42 +603,40 @@ function renderNews(
                     )
             )
             .join("");
-
 }
 
-
-// ===============================
-// RENDER COMPACT
-// ===============================
+/* =====================================================
+   RENDER COMPACT
+===================================================== */
 
 function renderCompact(
     elementId,
-    articles
+    result
 ) {
 
     const element =
         document.getElementById(elementId);
 
-    if (!element) return;
-
-
-    if (!articles.length) {
-
-        element.innerHTML = `
-
-            <div class="loading">
-                No news available.
-            </div>
-
-        `;
-
+    if (!element) {
         return;
-
     }
 
+    if (
+        result.rateLimited ||
+        result.error ||
+        !result.articles.length
+    ) {
+
+        showNewsMessage(
+            element,
+            "News temporarily unavailable."
+        );
+
+        return;
+    }
 
     element.innerHTML =
-        articles
+        result.articles
             .slice(0, 5)
             .map(
                 (article, index) =>
@@ -560,56 +646,60 @@ function renderCompact(
                     )
             )
             .join("");
-
 }
 
-
-// ===============================
-// HERO
-// ===============================
+/* =====================================================
+   HERO
+===================================================== */
 
 async function loadHero() {
 
-    const articles =
+    const result =
         await getNews("general");
 
     const hero =
         document.getElementById("heroNews");
 
-
-    if (!articles.length) {
-
-        hero.innerHTML = `
-
-            <div class="loading">
-                Unable to load top stories.
-            </div>
-
-        `;
-
-        breakingText.textContent =
-            "Unable to load latest headlines.";
-
+    if (!hero) {
         return;
-
     }
 
+    if (result.rateLimited) {
 
-    const first =
-        articles.slice(0, 3);
+        showNewsMessage(
+            hero,
+            "News service is busy. Please try again shortly."
+        );
 
+        return;
+    }
+
+    if (
+        result.error ||
+        !result.articles.length
+    ) {
+
+        showNewsMessage(
+            hero,
+            "Unable to load top stories."
+        );
+
+        return;
+    }
+
+    const articles =
+        result.articles.slice(0, 3);
 
     hero.innerHTML = `
-
         ${createHeroCard(
-            first[0],
+            articles[0],
             0,
             true
         )}
 
         <div class="hero-side">
 
-            ${first
+            ${articles
                 .slice(1)
                 .map(
                     (article, index) =>
@@ -621,151 +711,58 @@ async function loadHero() {
                 .join("")}
 
         </div>
-
     `;
 
+    if (breakingText) {
 
-    breakingText.textContent =
-        articles
-            .slice(0, 5)
-            .map(
-                article =>
-                    article.title
-            )
-            .join(" • ");
-
+        breakingText.textContent =
+            result.articles
+                .slice(0, 5)
+                .map(
+                    article => article.title
+                )
+                .join(" • ");
+    }
 }
 
+/* =====================================================
+   LOAD ONE CATEGORY
+===================================================== */
 
-// ===============================
-// LOAD ALL NEWS
-// ===============================
-
-async function loadAllNews() {
-
-    console.log(
-        "Loading all NewsPulse sections..."
-    );
-
-
-    await loadHero();
-
-
-    const results =
-        await Promise.all([
-
-            getNews("general"),
-
-            getNews("nation"),
-
-            getNews("world"),
-
-            getNews("sports"),
-
-            getNews("technology"),
-
-            getNews("business"),
-
-            getNews("science"),
-
-            getNews("entertainment")
-
-        ]);
-
-
-    const [
-
-        latest,
-        india,
-        world,
-        sports,
-        technology,
-        business,
-        science,
-        entertainment
-
-    ] = results;
-
-
-    renderNews(
-        "latestNews",
-        latest
-    );
-
-    renderNews(
-        "indiaNews",
-        india
-    );
-
-    renderNews(
-        "worldNews",
-        world
-    );
-
-    renderNews(
-        "sportsNews",
-        sports
-    );
-
-    renderNews(
-        "technologyNews",
-        technology
-    );
-
-    renderCompact(
-        "businessNews",
-        business
-    );
-
-    renderCompact(
-        "scienceNews",
-        science
-    );
-
-    renderNews(
-        "entertainmentNews",
-        entertainment
-    );
-
-}
-
-
-// ===============================
-// CATEGORY CLICK
-// ===============================
-
-async function loadCategory(category) {
+async function loadCategory(
+    category
+) {
 
     console.log(
         "Category clicked:",
         category
     );
 
-
-    const articles =
+    const result =
         await getNews(category);
-
 
     renderNews(
         "latestNews",
-        articles
+        result
     );
 
+    const latestSection =
+        document.querySelector(
+            ".news-section"
+        );
 
-    window.scrollTo({
+    if (latestSection) {
 
-        top: 0,
-
-        behavior: "smooth"
-
-    });
-
+        latestSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 }
 
-
-// ===============================
-// ALL CATEGORY BUTTONS
-// ===============================
+/* =====================================================
+   CATEGORY BUTTONS
+===================================================== */
 
 document
     .querySelectorAll("[data-category]")
@@ -777,16 +774,15 @@ document
 
                 event.preventDefault();
 
-
                 const category =
                     button.dataset.category;
-
 
                 console.log(
                     "Clicked:",
                     category
                 );
 
+                /* Active category */
 
                 document
                     .querySelectorAll(
@@ -802,31 +798,143 @@ document
 
                     });
 
+                /* Close mobile menu */
 
-                navLinks.classList.remove(
-                    "show"
-                );
+                if (navLinks) {
+                    navLinks.classList.remove(
+                        "show"
+                    );
+                }
 
+                /* Load selected category */
 
-                loadCategory(
-                    category
-                );
-
+                loadCategory(category);
             }
         );
 
     });
 
+/* =====================================================
+   LOAD ALL NEWS
+===================================================== */
 
-// ===============================
-// SEARCH
-// ===============================
+/*
+   IMPORTANT:
+   Do NOT use Promise.all() here.
+
+   Promise.all() sends 8 requests together.
+   GNews Free allows about 1 request/second.
+
+   We load categories one-by-one.
+*/
+
+async function loadAllNews() {
+
+    console.log(
+        "Starting NewsPulse news loading..."
+    );
+
+    /* HERO */
+
+    await loadHero();
+
+    /* Latest */
+
+    const latest =
+        await getNews("general");
+
+    renderNews(
+        "latestNews",
+        latest
+    );
+
+    /* India */
+
+    const india =
+        await getNews("nation");
+
+    renderNews(
+        "indiaNews",
+        india
+    );
+
+    /* World */
+
+    const world =
+        await getNews("world");
+
+    renderNews(
+        "worldNews",
+        world
+    );
+
+    /* Sports */
+
+    const sports =
+        await getNews("sports");
+
+    renderNews(
+        "sportsNews",
+        sports
+    );
+
+    /* Technology */
+
+    const technology =
+        await getNews("technology");
+
+    renderNews(
+        "technologyNews",
+        technology
+    );
+
+    /* Business */
+
+    const business =
+        await getNews("business");
+
+    renderCompact(
+        "businessNews",
+        business
+    );
+
+    /* Science */
+
+    const science =
+        await getNews("science");
+
+    renderCompact(
+        "scienceNews",
+        science
+    );
+
+    /* Entertainment */
+
+    const entertainment =
+        await getNews("entertainment");
+
+    renderNews(
+        "entertainmentNews",
+        entertainment
+    );
+
+    console.log(
+        "NewsPulse loading completed."
+    );
+}
+
+/* =====================================================
+   SEARCH
+===================================================== */
 
 async function performSearch() {
 
+    if (!searchInput) {
+        return;
+    }
+
     const query =
         searchInput.value.trim();
-
 
     if (!query) {
 
@@ -835,40 +943,45 @@ async function performSearch() {
         );
 
         return;
-
     }
 
-
-    const articles =
+    const result =
         await searchNews(query);
-
 
     const latestSection =
         document.getElementById(
             "latestNews"
         );
 
-
-    if (!articles.length) {
-
-        latestSection.innerHTML = `
-
-            <div class="loading">
-
-                No results found for
-                "<strong>${query}</strong>"
-
-            </div>
-
-        `;
-
+    if (!latestSection) {
         return;
-
     }
 
+    if (result.rateLimited) {
+
+        showNewsMessage(
+            latestSection,
+            "Search is temporarily busy. Please try again shortly."
+        );
+
+        return;
+    }
+
+    if (
+        result.error ||
+        !result.articles.length
+    ) {
+
+        showNewsMessage(
+            latestSection,
+            `No results found for "${query}".`
+        );
+
+        return;
+    }
 
     latestSection.innerHTML =
-        articles
+        result.articles
             .map(
                 (article, index) =>
                     createNewsCard(
@@ -878,84 +991,105 @@ async function performSearch() {
             )
             .join("");
 
+    const newsSection =
+        document.querySelector(
+            ".news-section"
+        );
 
-    document
-        .querySelector(".news-section")
-        .scrollIntoView({
+    if (newsSection) {
 
+        newsSection.scrollIntoView({
             behavior: "smooth"
-
         });
-
+    }
 }
 
+if (searchSubmit) {
 
-searchSubmit.addEventListener(
-    "click",
-    performSearch
-);
+    searchSubmit.addEventListener(
+        "click",
+        performSearch
+    );
+}
 
+if (searchInput) {
 
-searchInput.addEventListener(
-    "keydown",
-    event => {
+    searchInput.addEventListener(
+        "keydown",
+        event => {
 
-        if (event.key === "Enter") {
+            if (event.key === "Enter") {
 
-            performSearch();
+                performSearch();
+
+            }
 
         }
+    );
+}
 
-    }
-);
-
-
-// ===============================
-// NEWSLETTER
-// ===============================
+/* =====================================================
+   NEWSLETTER
+===================================================== */
 
 const newsletterForm =
     document.getElementById(
         "newsletterForm"
     );
 
+if (newsletterForm) {
 
-newsletterForm.addEventListener(
-    "submit",
-    event => {
+    newsletterForm.addEventListener(
+        "submit",
+        event => {
 
-        event.preventDefault();
+            event.preventDefault();
 
+            const email =
+                document.getElementById(
+                    "newsletterEmail"
+                )?.value;
 
-        const email =
-            document.getElementById(
-                "newsletterEmail"
-            ).value;
+            if (!email) {
+                return;
+            }
 
+            alert(
+                `Thanks! ${email} has been subscribed.`
+            );
 
-        alert(
-            `Thanks! ${email} has been subscribed.`
-        );
+            newsletterForm.reset();
+        }
+    );
+}
 
+/* =====================================================
+   AUTOMATIC REFRESH
+===================================================== */
 
-        newsletterForm.reset();
+/*
+   IMPORTANT:
+   Do not refresh every 15 minutes with 8 requests.
+   That creates unnecessary API usage.
 
-    }
-);
-
-
-// ===============================
-// AUTO REFRESH
-// ===============================
+   Refresh once every 30 minutes.
+*/
 
 setInterval(
-    loadAllNews,
-    15 * 60 * 1000
+    () => {
+
+        console.log(
+            "Refreshing NewsPulse..."
+        );
+
+        loadAllNews();
+
+    },
+    30 * 60 * 1000
 );
 
-
-// ===============================
-// START
-// ===============================
+/* =====================================================
+   START APP
+===================================================== */
 
 loadAllNews();
