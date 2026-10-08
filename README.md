@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  🌐 Live Demo • 💻 Responsive Web App • ⚡ JavaScript Based
+  🌐 Live Demo https://newspulse-beryl.vercel.app/ • 💻 Responsive Web App • ⚡ JavaScript Based
 </p>
 
 ---
