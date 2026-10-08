@@ -6,6 +6,8 @@
 
 <p align="center">
   🌐 Live Demo • 💻 Responsive Web App • ⚡ JavaScript Based
+  🔗 Live Website
+https://newspulse-beryl.vercel.app/
 </p>
 
 ---
